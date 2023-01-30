@@ -1,0 +1,10 @@
+C:\Users\admin\source\ссп\Lab2_1\Lab2_1\bin\Debug\Lab2_1.exe.config
+C:\Users\admin\source\ссп\Lab2_1\Lab2_1\bin\Debug\Lab2_1.exe
+C:\Users\admin\source\ссп\Lab2_1\Lab2_1\bin\Debug\Lab2_1.pdb
+C:\Users\admin\source\ссп\Lab2_1\Lab2_1\obj\Debug\Lab2_1.csproj.AssemblyReference.cache
+C:\Users\admin\source\ссп\Lab2_1\Lab2_1\obj\Debug\Lab2_1.Properties.Resources.resources
+C:\Users\admin\source\ссп\Lab2_1\Lab2_1\obj\Debug\Lab2_1.csproj.GenerateResource.cache
+C:\Users\admin\source\ссп\Lab2_1\Lab2_1\obj\Debug\Lab2_1.csproj.CoreCompileInputs.cache
+C:\Users\admin\source\ссп\Lab2_1\Lab2_1\obj\Debug\Lab2_1.exe
+C:\Users\admin\source\ссп\Lab2_1\Lab2_1\obj\Debug\Lab2_1.pdb
+C:\Users\admin\source\ссп\Lab2_1\Lab2_1\obj\Debug\Lab2_1.Server.resources
