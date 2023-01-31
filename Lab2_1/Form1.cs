@@ -112,6 +112,7 @@ namespace Lab2_1
                         
                         String sendingFile = directory + "\\" + currentFile;
                         textStatus.Text += "Reading file into bytes " + currentFile + Environment.NewLine;
+
                         byte[] fileInBytes = File.ReadAllBytes(sendingFile);
                         bw = new BinaryWriter(client.GetStream());
 
