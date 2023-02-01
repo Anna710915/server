@@ -115,16 +115,16 @@ namespace Lab2_1
                         }
 
 
-                        sr = new StreamReader(client.GetStream());
-                        sw = new StreamWriter(client.GetStream());
-                        sw.AutoFlush = true;
-                        while (client != null && client.Connected)
+                        try
                         {
-                            try
-                            {
+                            while (client != null)
+                        {
+
                                 // Get a stream object for reading and writing
                                 // Buffer for reading data
-
+                                sr = new StreamReader(client.GetStream());
+                                sw = new StreamWriter(client.GetStream());
+                                sw.AutoFlush = true;
                                 String currentFile = null;
                                 while (true)
                                 {
@@ -169,22 +169,24 @@ namespace Lab2_1
 
                                     await stream.WriteAsync(fileInBytes, 0, fileInBytes.Length);
 
-
                                     textStatus.Text += "Sending file for execution " + currentFile + Environment.NewLine;
 
-                                    stream.Flush();
+                                    await stream.FlushAsync();
+
+                                    stream.Dispose();
+         
 
                                 }
 
-                            } catch (Exception ex)
-                            {
-                                textStatus.Text += "Error " + ex.Message + Environment.NewLine;
-                            } finally
-                            {
-                                sr.Close();
-                                sw.Close();
                             }
-
+                            } catch (Exception ex)
+                        {
+                            textStatus.Text += "Error " + ex.Message + Environment.NewLine;
+                        }
+                        finally
+                        {
+                            sr.Close();
+                            sw.Close();
                         }
 
                     }
