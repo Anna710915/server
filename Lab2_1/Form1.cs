@@ -17,9 +17,6 @@ namespace Lab2_1
 {
     public partial class Server : Form
     {
-        List<TcpClient> clients = new List<TcpClient>();
-        StreamReader sr;
-        StreamWriter sw;
         TcpListener server;
         int port;
         IPAddress ipAddress;
@@ -42,159 +39,134 @@ namespace Lab2_1
 
         private void textPort_TextChanged(object sender, EventArgs e)
         {
-            
+
         }
 
         private void buttonStop_Click(object sender, EventArgs e)
         {
-           
-           // clients.ForEach(c => c.Close());
-            textStatus.Text += clients.Count();
-            if(server != null)
-            {
-                server.Stop();
-                textStatus.Text += "Server stoped " + Environment.NewLine;
-                server = null;
-            } 
+            if (server == null)
+                return;
+            
+            server.Stop();
+            server = null;
+            textStatus.Text += "Server stoped " + Environment.NewLine;
         }
 
         private async void button1_Click(object sender, EventArgs e)
         {
-            try
-            {
-                ipAddress = IPAddress.Parse(textHost.Text);
-            } catch
+            if (server != null)
+                return;
+            
+            var directory = Directory.GetCurrentDirectory() + "\\exe";
+            if (!IPAddress.TryParse(textHost.Text, out ipAddress))
             {
                 textStatus.Text += "Invalid address: " + textHost.Text + Environment.NewLine;
+                return;
+            }
+
+
+            if (!int.TryParse(textPort.Text, out port))
+            {
+                textStatus.Text += "Invalid port: " + textPort.Text + Environment.NewLine;
+                return;
             }
             
             try
             {
-                port = int.Parse(textPort.Text);
-            } catch
-            {
-                textStatus.Text += "Invalid port: " + textPort.Text + Environment.NewLine;
+                server = new TcpListener(ipAddress, port);
             }
-            
-            if(ipAddress != null && port != 0)
+            catch (ArgumentOutOfRangeException ex)
             {
-                
-                if(server == null)
+                textStatus.Text += "Invalid port: " + ex.Message + Environment.NewLine;
+                return;
+            }
+
+
+            try
+            {
+                // Start listening for client requests.
+                server.Start();
+                textStatus.Text += "Server started" + Environment.NewLine;
+                //Enter the listening loop.
+                while (true)
                 {
-                    // TcpListener server = new TcpListener(port);
-                    server = new TcpListener(ipAddress, port);
-                    // Start listening for client requests.
-                    server.Start();
-                    textStatus.Text += "Server started" + Environment.NewLine;
-                    //Enter the listening loop.
-                    while (true)
+                    textStatus.Text += "Waiting for a connection... " + Environment.NewLine;
+                    try
                     {
-                        TcpClient client = null;
-                        if(client == null || !client.Connected)
+                        using (TcpClient client = await server.AcceptTcpClientAsync())
+                        using (StreamReader sr = new StreamReader(client.GetStream()))
+                        using (StreamWriter sw = new StreamWriter(client.GetStream()))
                         {
-                            try
+                            sw.AutoFlush = true;
+                            textStatus.Text += "Connected!" + Environment.NewLine;
+                            // Get a stream object for reading and writing
+                            // Buffer for reading data
+
+                            while (client.Connected)
                             {
-                                if (server != null)
+                                var serverMethod = await sr.ReadLineAsync();
+                                textStatus.Text += "Read client request: " + serverMethod + Environment.NewLine;
+
+                                switch (serverMethod)
                                 {
-                                    textStatus.Text += "Waiting for a connection... " + Environment.NewLine;
-                                    client = await server.AcceptTcpClientAsync();
-                                    textStatus.Text += "Connected!" + Environment.NewLine;
-                                    // clients.Add(client);
-                                }
-                                else
-                                {
-                                    textStatus.Text += "Server shutdown... " + Environment.NewLine;
-                                }
-
-                            }
-                            catch (Exception ex)
-                            {
-                                textStatus.Text += "Server shutdown... " + Environment.NewLine;
-                                break;
-                            }
-                        }
-
-
-                        try
-                        {
-                            while (client != null)
-                        {
-
-                                // Get a stream object for reading and writing
-                                // Buffer for reading data
-                                sr = new StreamReader(client.GetStream());
-                                sw = new StreamWriter(client.GetStream());
-                                sw.AutoFlush = true;
-                                String currentFile = null;
-                                while (true)
-                                {
-                                    string data = await sr.ReadLineAsync();
-
-                                    if (data != "true")
-                                    {
-                                        currentFile = data;
-                                        break;
-                                    }
-                                    textStatus.Text += "Read client request: " + data + Environment.NewLine;
-
-                                    string directory = Directory.GetCurrentDirectory() + "\\exe";
-                                    string[] files = Directory.GetFiles(directory);
-                                    string all = "";
-                                    for (int j = 0; j < files.Length; j++)
-                                    {
-                                        if (files[j].EndsWith(".exe"))
+                                    case "listFiles":
+                                        var availableExeFiles = "";
+                                        foreach (var file in Directory.GetFiles(directory))
                                         {
-                                            int indexDelimeter = files[j].LastIndexOf('\u005C');
-                                            textStatus.Text += "Sending file " + files[j].Substring(indexDelimeter + 1) + Environment.NewLine;
-                                            all += files[j].Substring(indexDelimeter + 1) + ";";
+                                            if (file.EndsWith(".exe"))
+                                            {
+                                                int indexDelimeter = file.LastIndexOf('\u005C');
+                                                textStatus.Text +=
+                                                    "Sending file " + file.Substring(indexDelimeter + 1) +
+                                                    Environment.NewLine;
+                                                availableExeFiles += file.Substring(indexDelimeter + 1) + ";";
+                                            }
                                         }
 
-                                    }
-                                    all.Substring(0, all.Length - 1);
-                                    await sw.WriteLineAsync(all);
-                                    textStatus.Text += "Sending files " + Environment.NewLine;
+                                        await sw.WriteLineAsync(availableExeFiles);
+                                        break;
+                                    case "sendFile":
+                                        textStatus.Text += "Sending files " + Environment.NewLine;
+                                        var currentFile = await sr.ReadLineAsync();
+
+                                        var sendingFile = directory + "\\" + currentFile;
+                                        textStatus.Text += "Reading file into bytes " + currentFile +
+                                                           Environment.NewLine;
+
+                                        var fileInBytes = File.ReadAllBytes(sendingFile);
+                                        using (BinaryWriter bw = new BinaryWriter(client.GetStream(),
+                                                   new UTF8Encoding(false, true), leaveOpen: true))
+                                        {
+                                            bw.Write(fileInBytes);
+                                        }
+
+                                        textStatus.Text += "Sending file for execution " + currentFile +
+                                                           Environment.NewLine;
+                                        break;
+                                    default:
+                                        textStatus.Text += "Forbidden method " + Environment.NewLine;
+                                        break;
                                 }
-
-                                if (currentFile != null)
-                                {
-
-
-                                    textStatus.Text += "Current file " + currentFile + Environment.NewLine;
-                                    String sendingFile = Directory.GetCurrentDirectory() + "\\exe\\" + currentFile;
-
-                                    NetworkStream stream = client.GetStream();
-                                    byte[] fileInBytes = File.ReadAllBytes(sendingFile);
-
-                                    textStatus.Text += "Reading file into bytes " + fileInBytes.Length + Environment.NewLine;
-
-                                    await stream.WriteAsync(fileInBytes, 0, fileInBytes.Length);
-
-                                    textStatus.Text += "Sending file for execution " + currentFile + Environment.NewLine;
-
-                                    await stream.FlushAsync();
-
-                                    stream.Dispose();
-         
-
-                                }
-
                             }
-                            } catch (Exception ex)
-                        {
-                            textStatus.Text += "Error " + ex.Message + Environment.NewLine;
                         }
-                        finally
-                        {
-                            sr.Close();
-                            sw.Close();
-                        }
-
+                    }
+                    catch (SocketException exception)
+                    {
+                        textStatus.Text += $"Socket ex: {exception.Message} " + Environment.NewLine;
                     }
                 }
-                
+            }
+            catch (Exception exception)
+            {
+                textStatus.Text += "Error " + exception.Message + Environment.NewLine;
             }
             
+            
+            if (server != null)
+            {
+                server.Stop();
+                server = null;
+            }
         }
-
     }
 }
