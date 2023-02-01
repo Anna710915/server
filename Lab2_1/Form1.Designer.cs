@@ -97,6 +97,7 @@ namespace Lab2_1
             this.textStatus.Location = new System.Drawing.Point(62, 96);
             this.textStatus.Multiline = true;
             this.textStatus.Name = "textStatus";
+            this.textStatus.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.textStatus.Size = new System.Drawing.Size(274, 311);
             this.textStatus.TabIndex = 6;
             // 
